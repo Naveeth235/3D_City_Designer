@@ -51,6 +51,7 @@ public:
     CityGenerator();
     
     void generateCity(int numBuildings, int layoutSize, RoadType roadType, SkylineType skylineType);
+    void generateSampleCity(); // Generate a nice sample city with 20 buildings
     void generateRoads(RoadType type, int layoutSize);
     void generateBuildings(int numBuildings, SkylineType skylineType, int layoutSize);
     void generateParks(int numParks, int layoutSize);
@@ -59,6 +60,7 @@ public:
     
     // Getters
     const std::vector<Building>& getBuildings() const { return buildings; }
+    std::vector<Building>& getBuildings() { return buildings; } // Non-const for editing
     const std::vector<Road>& getRoads() const { return roads; }
     const std::vector<Park>& getParks() const { return parks; }
     const std::vector<Vehicle>& getVehicles() const { return vehicles; }
@@ -67,6 +69,16 @@ public:
     int getLayoutSize() const { return layoutSize; }
     
     void updateVehicles(float deltaTime);
+    
+    // Manual object placement
+    void addBuilding(const Building& building);
+    void addRoad(const Road& road);
+    void addPark(const Park& park);
+    
+    // Delete objects
+    bool deleteBuildingAt(const glm::vec2& pos);
+    bool deleteRoadAt(const glm::vec2& pos, float threshold);
+    bool deleteParkAt(const glm::vec2& pos);
     
 private:
     std::vector<Building> buildings;
