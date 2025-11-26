@@ -137,7 +137,8 @@ void Renderer3D::render(const CityGenerator& cityGen) {
     // Setup street lights as point lights if it's night
     const auto& streetLights = cityGen.getStreetLights();
     if (isNightTime() && !streetLights.empty()) {
-        int numLights = std::min(static_cast<int>(streetLights.size()), 50);
+        // Increase limit to 100 for better coverage
+        int numLights = std::min(static_cast<int>(streetLights.size()), 100);
         shader.setInt("numPointLights", numLights);
         
         for (int i = 0; i < numLights; i++) {
@@ -145,7 +146,8 @@ void Renderer3D::render(const CityGenerator& cityGen) {
             std::string colorName = "pointLightColors[" + std::to_string(i) + "]";
             
             shader.setVec3(posName, streetLights[i].position);
-            shader.setVec3(colorName, glm::vec3(1.0f, 0.9f, 0.5f)); // Warm yellow light
+            // Brighter and more intense light color
+            shader.setVec3(colorName, glm::vec3(1.2f, 1.1f, 0.7f)); // Brighter warm yellow
         }
     } else {
         shader.setInt("numPointLights", 0);

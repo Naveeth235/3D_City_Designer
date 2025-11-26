@@ -51,10 +51,10 @@ public:
     CityGenerator();
     
     void generateCity(int numBuildings, int layoutSize, RoadType roadType, SkylineType skylineType);
-    void generateSampleCity(); // Generate a nice sample city with 20 buildings
     void generateRoads(RoadType type, int layoutSize);
     void generateBuildings(int numBuildings, SkylineType skylineType, int layoutSize);
     void generateParks(int numParks, int layoutSize);
+    void generateStreetLights(); // Public for runtime regeneration
     
     void clear();
     
@@ -72,13 +72,7 @@ public:
     
     // Manual object placement
     void addBuilding(const Building& building);
-    void addRoad(const Road& road);
     void addPark(const Park& park);
-    
-    // Delete objects
-    bool deleteBuildingAt(const glm::vec2& pos);
-    bool deleteRoadAt(const glm::vec2& pos, float threshold);
-    bool deleteParkAt(const glm::vec2& pos);
     
 private:
     std::vector<Building> buildings;
@@ -95,7 +89,6 @@ private:
     void generateRadialRoads(int size);
     void generateRandomRoads(int size);
     void generateVehicles(int numVehicles);
-    void generateStreetLights();
     
     bool isValidBuildingPosition(const glm::vec2& pos, const glm::vec2& size, int layoutSize);
     float getHeightForSkyline(SkylineType type);

@@ -82,6 +82,7 @@ void Renderer2D::drawPixel(int x, int y, glm::vec3 color) {
     }
 }
 
+// Bresenham's Line Algorithm
 void Renderer2D::drawBresenhamLine(int x1, int y1, int x2, int y2, glm::vec3 color) {
     int dx = abs(x2 - x1);
     int dy = abs(y2 - y1);
@@ -111,6 +112,7 @@ void Renderer2D::drawBresenhamLine(int x1, int y1, int x2, int y2, glm::vec3 col
     }
 }
 
+// Midpoint Circle Algorithm
 void Renderer2D::drawMidpointCircle(int cx, int cy, int radius, glm::vec3 color) {
     int x = 0;
     int y = radius;

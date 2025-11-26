@@ -95,6 +95,12 @@ void moveSelectedBuilding(int dx, int dy);
 void displayWelcomeMessage();
 void displayControls();
 glm::vec2 screenToWorld(const glm::vec2& screenPos, int screenWidth, int screenHeight);
+void regenerateRoads();
+void addOneBuilding();
+void removeOneBuilding();
+void cycleSkylineType();
+void cycleTextureTheme();
+void setRoadPattern(RoadType newType);
 
 // ============================================================================
 // MAIN ENTRY POINT
@@ -306,13 +312,24 @@ int main() {
                                          std::to_string(newBuildingPreview.height);
                     textRenderer->renderText(dimText, 10, y, scale * 0.9f, glm::vec3(1.0f, 1.0f, 0.0f));
                 } else {
-                    textRenderer->renderText("2D MODE:", 10, y, scale, highlightColor);
+                    textRenderer->renderText("2D PLANNING:", 10, y, scale, highlightColor);
                     y += 8 * scale;
-                    textRenderer->renderText("Click - Select building", 10, y, scale * 0.9f, textColor);
+                    textRenderer->renderText("Left Click - Select building", 10, y, scale * 0.9f, textColor);
                     y += 8 * scale;
                     textRenderer->renderText("Arrow Keys - Move building", 10, y, scale * 0.9f, textColor);
                     y += 8 * scale;
                     textRenderer->renderText("N - Add new building", 10, y, scale * 0.9f, textColor);
+                    y += 10 * scale;
+                    
+                    textRenderer->renderText("CITY MODIFICATIONS:", 10, y, scale * 0.9f, glm::vec3(0.3f, 1.0f, 0.8f));
+                    y += 8 * scale;
+                    textRenderer->renderText("1/2/3 - Roads (Grid/Radial/Random)", 10, y, scale * 0.8f, glm::vec3(0.7f, 1.0f, 0.7f));
+                    y += 7 * scale;
+                    textRenderer->renderText("B/V - Add/Remove building", 10, y, scale * 0.8f, glm::vec3(0.7f, 1.0f, 0.7f));
+                    y += 7 * scale;
+                    textRenderer->renderText("K - Cycle skyline (Low/Mid/High)", 10, y, scale * 0.8f, glm::vec3(0.7f, 1.0f, 0.7f));
+                    y += 7 * scale;
+                    textRenderer->renderText("M - Cycle textures", 10, y, scale * 0.8f, glm::vec3(0.7f, 1.0f, 0.7f));
                     y += 8 * scale;
                     
                     if (selectedBuildingIndex >= 0) {
@@ -321,15 +338,15 @@ int main() {
                     }
                 }
             } else {
-                textRenderer->renderText("3D MODE:", 10, y, scale, highlightColor);
+                textRenderer->renderText("3D EXPLORATION:", 10, y, scale, highlightColor);
                 y += 8 * scale;
-                textRenderer->renderText("W/A/S/D - Move", 10, y, scale * 0.9f, textColor);
+                textRenderer->renderText("W/A/S/D - Move camera", 10, y, scale * 0.9f, textColor);
                 y += 8 * scale;
-                textRenderer->renderText("SPACE/SHIFT - Up/Down", 10, y, scale * 0.9f, textColor);
+                textRenderer->renderText("SPACE/SHIFT - Move up/down", 10, y, scale * 0.9f, textColor);
                 y += 8 * scale;
-                textRenderer->renderText("Right Mouse - Look", 10, y, scale * 0.9f, textColor);
+                textRenderer->renderText("Right Mouse - Look around", 10, y, scale * 0.9f, textColor);
                 y += 8 * scale;
-                textRenderer->renderText("T/Y - Time speed", 10, y, scale * 0.9f, textColor);
+                textRenderer->renderText("T/Y - Time speed (fast/normal)", 10, y, scale * 0.9f, textColor);
             }
             
             glEnable(GL_DEPTH_TEST);
@@ -496,6 +513,11 @@ void displayControls() {
     std::cout << "  Left Click  - Select a building" << std::endl;
     std::cout << "  Arrow Keys  - Move selected building (↑↓←→)" << std::endl;
     std::cout << "  N           - Start adding NEW building" << std::endl;
+    std::cout << "\n2D MODE (City Modifications):" << std::endl;
+    std::cout << "  1/2/3       - Change road pattern (1=Grid, 2=Radial, 3=Random)" << std::endl;
+    std::cout << "  B/V         - Add/Remove one building" << std::endl;
+    std::cout << "  K           - Cycle skyline type (Low→Mid→High)" << std::endl;
+    std::cout << "  M           - Cycle texture theme (Modern→Brick→Mixed)" << std::endl;
     std::cout << "\nADD BUILDING MODE:" << std::endl;
     std::cout << "  Arrow Keys  - Position new building (↑↓←→)" << std::endl;
     std::cout << "  +/-         - Adjust width" << std::endl;
@@ -686,6 +708,43 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             }
         }
         
+        // Runtime city modifications in 2D mode (when not adding building)
+        if (currentMode == AppMode::MODE_2D && !isAddingNewBuilding) {
+            // Road pattern selection with separate keys
+            if (key == GLFW_KEY_1) {
+                setRoadPattern(RoadType::GRID);
+            }
+            if (key == GLFW_KEY_2) {
+                setRoadPattern(RoadType::RADIAL);
+            }
+            if (key == GLFW_KEY_3) {
+                setRoadPattern(RoadType::RANDOM);
+            }
+            if (key == GLFW_KEY_B) {
+                addOneBuilding();
+            }
+            if (key == GLFW_KEY_V) {
+                removeOneBuilding();
+            }
+            if (key == GLFW_KEY_K) {
+                cycleSkylineType();
+            }
+            if (key == GLFW_KEY_M) {
+                cycleTextureTheme();
+            }
+            if (key == GLFW_KEY_L) {
+                // Debug: List all building positions
+                const auto& buildings = cityGen.getBuildings();
+                std::cout << "\n========== BUILDING POSITIONS ==========" << std::endl;
+                for (size_t i = 0; i < buildings.size(); ++i) {
+                    const auto& b = buildings[i];
+                    std::cout << "Building #" << i << ": X[" << b.position.x << "-" << (b.position.x + b.size.x) 
+                              << "] Y[" << b.position.y << "-" << (b.position.y + b.size.y) << "]" << std::endl;
+                }
+                std::cout << "========================================\n" << std::endl;
+            }
+        }
+        
         // Time control in 3D mode
         if (currentMode == AppMode::MODE_3D) {
             if (key == GLFW_KEY_T) {
@@ -714,10 +773,11 @@ void processInput(GLFWwindow* window) {
     }
     
     // Mouse click for building selection in 2D mode
+    static bool clickProcessed = false;
+    
     if (currentMode == AppMode::MODE_2D && 
         glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         
-        static bool clickProcessed = false;
         if (!clickProcessed) {
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
@@ -728,7 +788,6 @@ void processInput(GLFWwindow* window) {
             clickProcessed = true;
         }
     } else {
-        static bool clickProcessed = false;
         clickProcessed = false;
     }
 }
@@ -754,6 +813,12 @@ void selectNearestBuilding(const glm::vec2& worldPos) {
     const auto& buildings = cityGen.getBuildings();
     selectedBuildingIndex = -1;
     
+    std::cout << "\n[SELECT] Click at world position (" << (int)worldPos.x << ", " << (int)worldPos.y << ")" << std::endl;
+    
+    // Find closest building (even if not directly clicked)
+    float closestDist = 999999.0f;
+    int closestIndex = -1;
+    
     for (size_t i = 0; i < buildings.size(); ++i) {
         const auto& building = buildings[i];
         
@@ -764,22 +829,41 @@ void selectNearestBuilding(const glm::vec2& worldPos) {
             worldPos.y <= building.position.y + building.size.y) {
             
             selectedBuildingIndex = i;
-            std::cout << "[SELECT] Building #" << i << " selected at (" 
-                      << building.position.x << ", " << building.position.y << ")" << std::endl;
-            std::cout << "         Use arrow keys to move it!" << std::endl;
+            std::cout << "[SELECT] ✓ Building #" << i << " SELECTED (direct hit)!" << std::endl;
+            std::cout << "         Position: (" << building.position.x << ", " << building.position.y << ")" << std::endl;
+            std::cout << "         Size: " << building.size.x << "x" << building.size.y << std::endl;
+            std::cout << "         Bounds: X[" << building.position.x << "-" << (building.position.x + building.size.x) 
+                      << "] Y[" << building.position.y << "-" << (building.position.y + building.size.y) << "]" << std::endl;
             return;
+        }
+        
+        // Track closest building for debugging
+        float centerX = building.position.x + building.size.x / 2.0f;
+        float centerY = building.position.y + building.size.y / 2.0f;
+        float dist = std::sqrt((worldPos.x - centerX) * (worldPos.x - centerX) + 
+                              (worldPos.y - centerY) * (worldPos.y - centerY));
+        if (dist < closestDist) {
+            closestDist = dist;
+            closestIndex = i;
         }
     }
     
-    // If no building was clicked, deselect
+    // If no building was clicked, show closest one
     if (selectedBuildingIndex == -1) {
-        std::cout << "[SELECT] No building at cursor position" << std::endl;
+        std::cout << "[SELECT] ✗ No building at click position" << std::endl;
+        if (closestIndex >= 0) {
+            const auto& closest = buildings[closestIndex];
+            std::cout << "         Closest building #" << closestIndex << " is " << (int)closestDist << " units away" << std::endl;
+            std::cout << "         at (" << closest.position.x << ", " << closest.position.y 
+                      << ") size " << closest.size.x << "x" << closest.size.y << std::endl;
+        }
+        std::cout << "         TIP: Click must be INSIDE a building's rectangle area" << std::endl;
     }
 }
 
 /**
  * Move the currently selected building by dx, dy pixels
- * Demonstrates interactive object manipulation
+ * Demonstrates interactive object manipulation with collision detection
  */
 void moveSelectedBuilding(int dx, int dy) {
     if (selectedBuildingIndex < 0) return;
@@ -794,14 +878,176 @@ void moveSelectedBuilding(int dx, int dy) {
     float newY = building.position.y + dy;
     
     // Keep building within bounds
-    if (newX >= 0 && newX + building.size.x <= userLayoutSize &&
-        newY >= 0 && newY + building.size.y <= userLayoutSize) {
-        
-        building.position.x = newX;
-        building.position.y = newY;
-        
-        std::cout << "[MOVE] Building moved to (" << newX << ", " << newY << ")" << std::endl;
-    } else {
+    if (newX < 0 || newX + building.size.x > userLayoutSize ||
+        newY < 0 || newY + building.size.y > userLayoutSize) {
         std::cout << "[MOVE] Cannot move building outside city bounds" << std::endl;
+        return;
     }
+    
+    // Check collision with other buildings (with 10 unit buffer)
+    for (size_t i = 0; i < buildings.size(); ++i) {
+        if (i == selectedBuildingIndex) continue; // Skip self
+        
+        const auto& other = buildings[i];
+        if (newX < other.position.x + other.size.x + 10.0f &&
+            newX + building.size.x + 10.0f > other.position.x &&
+            newY < other.position.y + other.size.y + 10.0f &&
+            newY + building.size.y + 10.0f > other.position.y) {
+            std::cout << "[MOVE] Cannot move - would overlap with another building!" << std::endl;
+            return;
+        }
+    }
+    
+    // Move is valid
+    building.position.x = newX;
+    building.position.y = newY;
+    
+    std::cout << "[MOVE] Building moved to (" << newX << ", " << newY << ")" << std::endl;
+}
+
+// RUNTIME CITY MODIFICATION FUNCTIONS
+
+/**
+ * Cycle through road patterns: Grid -> Radial -> Random -> Grid
+ */
+void setRoadPattern(RoadType newType) {
+    userRoadType = newType;
+    
+    std::string typeName;
+    if (newType == RoadType::GRID) typeName = "GRID";
+    else if (newType == RoadType::RADIAL) typeName = "RADIAL";
+    else typeName = "RANDOM";
+    
+    std::cout << "[ROADS] Changed to " << typeName << " pattern" << std::endl;
+    
+    // Regenerate roads with new pattern
+    cityGen.generateRoads(userRoadType, userLayoutSize);
+    
+    // CRITICAL: Regenerate street lights after road changes!
+    cityGen.generateStreetLights();
+    
+    std::cout << "[ROADS] Road network and street lights regenerated!" << std::endl;
+}
+
+/**
+ * Add one building to the city at a random location with collision avoidance
+ */
+void addOneBuilding() {
+    // Try multiple times to find a valid position
+    const int maxAttempts = 20;
+    bool placed = false;
+    
+    for (int attempt = 0; attempt < maxAttempts && !placed; ++attempt) {
+        // Generate a new building at a semi-random location
+        Building newBuilding;
+        newBuilding.position.x = (rand() % (userLayoutSize - 80)) + 20;
+        newBuilding.position.y = (rand() % (userLayoutSize - 80)) + 20;
+        
+        // Size based on current skyline type
+        if (userSkylineType == SkylineType::LOW_RISE) {
+            newBuilding.size.x = 30 + rand() % 30;
+            newBuilding.size.y = 30 + rand() % 30;
+            newBuilding.height = 20 + rand() % 30;
+        } else if (userSkylineType == SkylineType::MID_RISE) {
+            newBuilding.size.x = 35 + rand() % 35;
+            newBuilding.size.y = 35 + rand() % 35;
+            newBuilding.height = 50 + rand() % 50;
+        } else {
+            newBuilding.size.x = 40 + rand() % 40;
+            newBuilding.size.y = 40 + rand() % 40;
+            newBuilding.height = 100 + rand() % 100;
+        }
+        
+        // Try to add building (will check collision internally)
+        size_t beforeCount = cityGen.getBuildings().size();
+        cityGen.addBuilding(newBuilding);
+        size_t afterCount = cityGen.getBuildings().size();
+        
+        if (afterCount > beforeCount) {
+            placed = true;
+            userNumBuildings++;
+            std::cout << "[BUILDINGS] Added one building. Total: " << userNumBuildings << std::endl;
+        }
+    }
+    
+    if (!placed) {
+        std::cout << "[BUILDINGS] Could not find valid position after " << maxAttempts << " attempts. Try removing some buildings first." << std::endl;
+    }
+}
+
+/**
+ * Remove the most recently added building
+ */
+void removeOneBuilding() {
+    const auto& buildings = cityGen.getBuildings();
+    
+    if (buildings.size() <= 1) {
+        std::cout << "[BUILDINGS] Cannot remove - at least 1 building required!" << std::endl;
+        return;
+    }
+    
+    userNumBuildings--;
+    
+    // Remove last building
+    auto& mutableBuildings = cityGen.getBuildings();
+    if (!mutableBuildings.empty()) {
+        mutableBuildings.pop_back();
+    }
+    
+    // Deselect if we removed the selected building
+    if (selectedBuildingIndex >= mutableBuildings.size()) {
+        selectedBuildingIndex = -1;
+    }
+    
+    std::cout << "[BUILDINGS] Removed one building. Total: " << userNumBuildings << std::endl;
+}
+
+/**
+ * Cycle through skyline types and regenerate building heights
+ */
+void cycleSkylineType() {
+    // Cycle to next skyline type
+    if (userSkylineType == SkylineType::LOW_RISE) {
+        userSkylineType = SkylineType::MID_RISE;
+        std::cout << "[SKYLINE] Changed to MID-RISE (50-100 units)" << std::endl;
+    } else if (userSkylineType == SkylineType::MID_RISE) {
+        userSkylineType = SkylineType::SKYSCRAPER;
+        std::cout << "[SKYLINE] Changed to SKYSCRAPER (100-200 units)" << std::endl;
+    } else {
+        userSkylineType = SkylineType::LOW_RISE;
+        std::cout << "[SKYLINE] Changed to LOW-RISE (20-50 units)" << std::endl;
+    }
+    
+    // Update all existing building heights
+    auto& buildings = cityGen.getBuildings();
+    for (auto& building : buildings) {
+        if (userSkylineType == SkylineType::LOW_RISE) {
+            building.height = 20 + rand() % 30;
+        } else if (userSkylineType == SkylineType::MID_RISE) {
+            building.height = 50 + rand() % 50;
+        } else {
+            building.height = 100 + rand() % 100;
+        }
+    }
+    
+    std::cout << "[SKYLINE] All building heights updated!" << std::endl;
+}
+
+/**
+ * Cycle through texture themes for 3D buildings
+ */
+void cycleTextureTheme() {
+    userTextureTheme = (userTextureTheme + 1) % 3;
+    
+    std::string themeName;
+    if (userTextureTheme == 0) {
+        themeName = "MODERN (glass/concrete)";
+    } else if (userTextureTheme == 1) {
+        themeName = "CLASSIC (brick)";
+    } else {
+        themeName = "MIXED (varied styles)";
+    }
+    
+    std::cout << "[TEXTURE] Changed to " << themeName << std::endl;
+    std::cout << "[TEXTURE] Switch to 3D mode to see the changes!" << std::endl;
 }

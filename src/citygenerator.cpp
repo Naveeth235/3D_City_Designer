@@ -3,6 +3,7 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 CityGenerator::CityGenerator() : layoutSize(600) {
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -22,76 +23,10 @@ void CityGenerator::generateCity(int numBuildings, int layoutSize, RoadType road
     generateStreetLights();
 }
 
-void CityGenerator::generateSampleCity() {
-    clear();
-    
-    this->layoutSize = 600;
-    this->currentRoadType = RoadType::GRID;
-    this->currentSkylineType = SkylineType::MID_RISE;
-    
-    // Generate grid roads
-    generateGridRoads(layoutSize);
-    
-    // Generate 20 buildings with varied sizes and heights
-    int buildingCount = 0;
-    int maxAttempts = 200;
-    int attempts = 0;
-    
-    while (buildingCount < 20 && attempts < maxAttempts) {
-        // Varied building sizes
-        float width = 30.0f + (std::rand() % 50);  // 30-80
-        float depth = 30.0f + (std::rand() % 50);  // 30-80
-        
-        glm::vec2 size(width, depth);
-        glm::vec2 pos(std::rand() % (layoutSize - static_cast<int>(size.x)), 
-                      std::rand() % (layoutSize - static_cast<int>(size.y)));
-        
-        if (isValidBuildingPosition(pos, size, layoutSize)) {
-            Building building;
-            building.position = pos;
-            building.size = size;
-            
-            // Varied heights for visual interest
-            int heightType = std::rand() % 3;
-            if (heightType == 0) {
-                building.height = 30.0f + (std::rand() % 30);  // Low rise
-            } else if (heightType == 1) {
-                building.height = 60.0f + (std::rand() % 40);  // Mid rise
-            } else {
-                building.height = 100.0f + (std::rand() % 80); // Tall
-            }
-            
-            building.textureIndex = std::rand() % 2;
-            buildings.push_back(building);
-            buildingCount++;
-        }
-        
-        attempts++;
-    }
-    
-    // Add a nice central park
-    Park centralPark;
-    centralPark.center = Point2D(layoutSize / 2, layoutSize / 2);
-    centralPark.radius = 50;
-    parks.push_back(centralPark);
-    
-    // Add a couple smaller parks
-    Park park1;
-    park1.center = Point2D(150, 150);
-    park1.radius = 30;
-    parks.push_back(park1);
-    
-    Park park2;
-    park2.center = Point2D(450, 450);
-    park2.radius = 30;
-    parks.push_back(park2);
-    
-    // Generate vehicles and street lights
-    generateVehicles(8);
-    generateStreetLights();
-}
-
 void CityGenerator::generateRoads(RoadType type, int size) {
+    // Clear existing roads before generating new pattern
+    roads.clear();
+    
     switch (type) {
         case RoadType::GRID:
             generateGridRoads(size);
@@ -278,16 +213,23 @@ void CityGenerator::generateVehicles(int numVehicles) {
 }
 
 void CityGenerator::generateStreetLights() {
-    // Place street lights along roads at regular intervals
+    streetLights.clear();
+    
+    // Place street lights along roads with moderate spacing
     for (const auto& road : roads) {
         float dx = road.end.x - road.start.x;
         float dy = road.end.y - road.start.y;
         float length = std::sqrt(dx * dx + dy * dy);
         
-        int numLights = static_cast<int>(length / 50.0f);
+        // Moderate spacing: every 60 units for balanced coverage
+        int numLights = static_cast<int>(length / 60.0f);
         
-        for (int i = 1; i < numLights; ++i) {
-            float t = static_cast<float>(i) / numLights;
+        // Skip very short roads
+        if (numLights == 0) continue;
+        
+        // Place lights along the road (skip endpoints to avoid clustering)
+        for (int i = 1; i <= numLights; ++i) {
+            float t = static_cast<float>(i) / (numLights + 1);
             float x = road.start.x + dx * t;
             float y = road.start.y + dy * t;
             
@@ -328,76 +270,25 @@ void CityGenerator::updateVehicles(float deltaTime) {
 }
 
 void CityGenerator::addBuilding(const Building& building) {
-    buildings.push_back(building);
-}
-
-void CityGenerator::addRoad(const Road& road) {
-    roads.push_back(road);
+    // Check if the building would overlap with existing buildings
+    bool hasOverlap = false;
+    for (const auto& existingBuilding : buildings) {
+        if (building.position.x < existingBuilding.position.x + existingBuilding.size.x + 15.0f &&
+            building.position.x + building.size.x + 15.0f > existingBuilding.position.x &&
+            building.position.y < existingBuilding.position.y + existingBuilding.size.y + 15.0f &&
+            building.position.y + building.size.y + 15.0f > existingBuilding.position.y) {
+            hasOverlap = true;
+            break;
+        }
+    }
     
-    // Regenerate vehicles and street lights based on new roads
-    if (!roads.empty()) {
-        generateVehicles(std::min(8, static_cast<int>(roads.size())));
-        generateStreetLights();
+    if (!hasOverlap) {
+        buildings.push_back(building);
+    } else {
+        std::cout << "[WARNING] Building placement would cause overlap - not added!" << std::endl;
     }
 }
 
 void CityGenerator::addPark(const Park& park) {
     parks.push_back(park);
-}
-
-bool CityGenerator::deleteBuildingAt(const glm::vec2& pos) {
-    for (auto it = buildings.begin(); it != buildings.end(); ++it) {
-        if (pos.x >= it->position.x && pos.x <= it->position.x + it->size.x &&
-            pos.y >= it->position.y && pos.y <= it->position.y + it->size.y) {
-            buildings.erase(it);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool CityGenerator::deleteRoadAt(const glm::vec2& pos, float threshold) {
-    for (auto it = roads.begin(); it != roads.end(); ++it) {
-        // Calculate distance from point to line segment
-        glm::vec2 start(it->start.x, it->start.y);
-        glm::vec2 end(it->end.x, it->end.y);
-        glm::vec2 lineDir = end - start;
-        float lineLength = glm::length(lineDir);
-        
-        if (lineLength < 0.001f) continue;
-        
-        glm::vec2 lineNorm = lineDir / lineLength;
-        float t = glm::dot(pos - start, lineNorm);
-        t = std::max(0.0f, std::min(lineLength, t));
-        
-        glm::vec2 closest = start + lineNorm * t;
-        float distance = glm::length(pos - closest);
-        
-        if (distance < threshold) {
-            roads.erase(it);
-            // Regenerate vehicles and street lights
-            vehicles.clear();
-            streetLights.clear();
-            if (!roads.empty()) {
-                generateVehicles(std::min(8, static_cast<int>(roads.size())));
-                generateStreetLights();
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
-bool CityGenerator::deleteParkAt(const glm::vec2& pos) {
-    for (auto it = parks.begin(); it != parks.end(); ++it) {
-        float dx = pos.x - it->center.x;
-        float dy = pos.y - it->center.y;
-        float distance = std::sqrt(dx * dx + dy * dy);
-        
-        if (distance <= it->radius) {
-            parks.erase(it);
-            return true;
-        }
-    }
-    return false;
 }

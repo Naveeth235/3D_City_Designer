@@ -14,18 +14,24 @@ uniform float emissive; // 0.0 = normal lighting, 1.0 = full glow
 uniform int useTexture; // 0 = use material color, 1 = use texture
 uniform vec3 materialColor; // Color when not using texture
 
-// Street light point lights (max 50)
+// Street light point lights (max 100 for better coverage)
 uniform int numPointLights;
-uniform vec3 pointLightPositions[50];
-uniform vec3 pointLightColors[50];
+uniform vec3 pointLightPositions[100];
+uniform vec3 pointLightColors[100];
 
 vec3 calculatePointLight(vec3 lightPos, vec3 lightColor, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(lightPos - fragPos);
     
-    // Attenuation (how light fades with distance)
+    // Improved attenuation for better light range
     float distance = length(lightPos - fragPos);
-    float attenuation = 1.0 / (1.0 + 0.01 * distance + 0.001 * distance * distance);
+    // Reduced attenuation factors for longer range
+    float attenuation = 1.0 / (1.0 + 0.005 * distance + 0.0005 * distance * distance);
+    
+    // Boost attenuation for closer objects
+    if (distance < 50.0) {
+        attenuation *= 1.5;
+    }
     
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
@@ -71,7 +77,7 @@ void main()
     vec3 result = ambient + diffuse + specular;
     
     // Add point lights (street lights)
-    for (int i = 0; i < numPointLights && i < 50; i++) {
+    for (int i = 0; i < numPointLights && i < 100; i++) {
         result += calculatePointLight(pointLightPositions[i], pointLightColors[i], norm, FragPos, viewDir);
     }
     
