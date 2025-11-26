@@ -1,15 +1,3 @@
-// ============================================================================
-// INTERACTIVE 3D CITY DESIGNER
-// Computer Graphics Assignment - Part 1
-// 
-// This application demonstrates:
-// - Basic OpenGL Lines for roads and boundaries
-// - Bresenham's Line Algorithm for pixel-perfect 2D road layouts
-// - Midpoint Circle Algorithm for circular parks and fountains
-// - 3D Model Rendering with Texture Mapping for buildings
-// - User-driven interactive city design
-// ============================================================================
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -22,15 +10,11 @@
 #include "renderer3d.h"
 #include "textrenderer.h"
 
-// ============================================================================
-// WINDOW CONFIGURATION
-// ============================================================================
+// window configuration 
 const unsigned int SCREEN_WIDTH = 800;
 const unsigned int SCREEN_HEIGHT = 600;
 
-// ============================================================================
-// APPLICATION STATE
-// ============================================================================
+// application state
 enum class AppMode {
     MODE_2D,    // Top-down planning view (Bresenham lines & Midpoint circles)
     MODE_3D     // 3D exploration view (textured buildings)
@@ -38,9 +22,7 @@ enum class AppMode {
 
 AppMode currentMode = AppMode::MODE_2D;
 
-// ============================================================================
-// USER-CONFIGURABLE PARAMETERS (Set at startup via console input)
-// ============================================================================
+// user configurable parameters  
 int userLayoutSize = 600;           // City grid size
 int userNumBuildings = 20;          // Number of buildings
 RoadType userRoadType = RoadType::GRID;  // Road pattern (grid/radial/random)
@@ -48,24 +30,18 @@ SkylineType userSkylineType = SkylineType::MID_RISE;  // Building heights
 int userParkRadius = 50;            // Park/fountain size (Midpoint Circle)
 int userTextureTheme = 0;           // Building facade texture (0-2)
 
-// ============================================================================
 // OBJECT SELECTION & MOVEMENT
-// ============================================================================
 int selectedBuildingIndex = -1;     // Currently selected building (-1 = none)
 const float MOVE_SPEED = 5.0f;      // Movement speed with arrow keys
 
-// ============================================================================
 // NEW BUILDING CREATION MODE
-// ============================================================================
 bool isAddingNewBuilding = false;   // True when in "Add Building" mode
 Building newBuildingPreview;        // Preview of building being placed
 const int DEFAULT_BUILDING_WIDTH = 40;
 const int DEFAULT_BUILDING_DEPTH = 40;
 const int DEFAULT_BUILDING_HEIGHT = 80;
 
-// ============================================================================
 // CAMERA & INPUT STATE
-// ============================================================================
 double lastX = SCREEN_WIDTH / 2.0;
 double lastY = SCREEN_HEIGHT / 2.0;
 bool firstMouse = true;
@@ -73,18 +49,14 @@ bool keys[6] = {false};             // W, S, A, D, Space, Shift for 3D camera
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// ============================================================================
 // GLOBAL OBJECTS
-// ============================================================================
 CityGenerator cityGen;
 Renderer2D* renderer2D = nullptr;
 Renderer3D* renderer3D = nullptr;
 TextRenderer* textRenderer = nullptr;
 bool showHelp = true;
 
-// ============================================================================
 // FUNCTION DECLARATIONS
-// ============================================================================
 void getUserInputs();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -102,18 +74,16 @@ void cycleSkylineType();
 void cycleTextureTheme();
 void setRoadPattern(RoadType newType);
 
-// ============================================================================
 // MAIN ENTRY POINT
-// ============================================================================
 int main() {
     // Display welcome message
     displayWelcomeMessage();
     
-    // ===== USER INPUT PHASE =====
+    // user input
     // Gather all user preferences before starting the application
     getUserInputs();
     
-    // ===== GLFW INITIALIZATION =====
+    // GLFW INITIALIZATION 
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
@@ -141,7 +111,7 @@ int main() {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetKeyCallback(window, key_callback);
     
-    // ===== GLAD INITIALIZATION =====
+    //GLAD INITIALIZATION 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -152,7 +122,7 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    // ===== RENDERER INITIALIZATION =====
+    //  RENDERER INITIALIZATION 
     renderer2D = new Renderer2D();
     renderer2D->init(SCREEN_WIDTH, SCREEN_HEIGHT);
     
@@ -162,7 +132,7 @@ int main() {
     textRenderer = new TextRenderer();
     textRenderer->init(SCREEN_WIDTH, SCREEN_HEIGHT);
     
-    // ===== CITY GENERATION =====
+    
     // Generate city based on user inputs
     std::cout << "\n[GENERATING CITY...]" << std::endl;
     cityGen.generateCity(userNumBuildings, userLayoutSize, userRoadType, userSkylineType);
@@ -174,13 +144,13 @@ int main() {
     cityGen.addPark(centralPark);
     
     std::cout << "[CITY GENERATED SUCCESSFULLY]" << std::endl;
-    std::cout << "\n========================================" << std::endl;
+    std::cout << "\n-------------------------------------" << std::endl;
     std::cout << "CITY IS READY! Opening 3D window..." << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "-------------------------------------\n" << std::endl;
     
     displayControls();
     
-    // ===== MAIN RENDERING LOOP =====
+    //main rendering loop
     while (!glfwWindowShouldClose(window)) {
         // Calculate delta time for smooth animations
         float currentFrame = glfwGetTime();
@@ -199,7 +169,7 @@ int main() {
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        // ===== 2D RENDERING (BRESENHAM & MIDPOINT CIRCLE) =====
+        // 2D RENDERING (BRESENHAM & MIDPOINT CIRCLE) 
         if (currentMode == AppMode::MODE_2D) {
             glDisable(GL_DEPTH_TEST);
             
@@ -256,13 +226,13 @@ int main() {
             renderer2D->render();
             glEnable(GL_DEPTH_TEST);
         }
-        // ===== 3D RENDERING (TEXTURED BUILDINGS) =====
+        // 3D RENDERING  
         else {
             renderer3D->updateCamera(deltaTime, keys, 0.0f, 0.0f);
             renderer3D->render(cityGen);
         }
         
-        // ===== ON-SCREEN UI =====
+        // ON-SCREEN UI 
         if (showHelp) {
             glDisable(GL_DEPTH_TEST);
             
@@ -356,37 +326,27 @@ int main() {
         glfwPollEvents();
     }
     
-    // ===== CLEANUP =====
+    //CLEANUP 
     delete renderer2D;
     delete renderer3D;
     delete textRenderer;
     
     glfwTerminate();
     
-    std::cout << "\n========================================" << std::endl;
+    std::cout << "\n-------------------------------------" << std::endl;
     std::cout << "Thank you for using Interactive City Designer!" << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "-------------------------------------\n" << std::endl;
     
     return 0;
 }
 
-// ============================================================================
 // USER INPUT FUNCTIONS
-// ============================================================================
 
-/**
- * Gather all user inputs via console before starting the graphical application
- * This allows users to customize:
- * - City size and building count
- * - Road network pattern (demonstrates Bresenham's Line Algorithm)
- * - Skyline pattern (building height distribution)
- * - Park size (demonstrates Midpoint Circle Algorithm)
- * - Texture theme for building facades
- */
+// gather all  hte info b4 starting to hte rendering
 void getUserInputs() {
-    std::cout << "\n========================================" << std::endl;
+    std::cout << "\n-------------------------------------" << std::endl;
     std::cout << "  CITY CONFIGURATION" << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "-------------------------------------\n" << std::endl;
     
     // Layout size input
     std::cout << "Enter city layout size (recommended 400-800): ";
@@ -479,7 +439,7 @@ void getUserInputs() {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     
     // Summary
-    std::cout << "\n========================================" << std::endl;
+    std::cout << "\n-------------------------------------" << std::endl;
     std::cout << "CONFIGURATION SUMMARY:" << std::endl;
     std::cout << "  Layout Size: " << userLayoutSize << "x" << userLayoutSize << std::endl;
     std::cout << "  Buildings: " << userNumBuildings << std::endl;
@@ -487,21 +447,21 @@ void getUserInputs() {
     std::cout << "  Skyline: " << (skylineChoice == 1 ? "Low-rise" : skylineChoice == 2 ? "Mid-rise" : "Skyscraper") << std::endl;
     std::cout << "  Park Radius: " << userParkRadius << std::endl;
     std::cout << "  Texture Theme: " << userTextureTheme << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "-------------------------------------\n" << std::endl;
 }
 
 void displayWelcomeMessage() {
-    std::cout << "\n========================================" << std::endl;
+    std::cout << "\n-------------------------------------" << std::endl;
     std::cout << "  INTERACTIVE 3D CITY DESIGNER" << std::endl;
     std::cout << "  Computer Graphics Assignment - Part 1" << std::endl;
-    std::cout << "========================================" << std::endl;
+    std::cout << "-------------------------------------" << std::endl;
     std::cout << "\nFEATURES DEMONSTRATED:" << std::endl;
     std::cout << "  ✓ Basic OpenGL Lines (roads, boundaries)" << std::endl;
     std::cout << "  ✓ Bresenham's Line Algorithm (2D roads)" << std::endl;
     std::cout << "  ✓ Midpoint Circle Algorithm (parks)" << std::endl;
     std::cout << "  ✓ 3D Texture Mapping (buildings)" << std::endl;
     std::cout << "  ✓ Interactive object placement & movement" << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    std::cout << "-------------------------------------\n" << std::endl;
 }
 
 void displayControls() {
@@ -530,12 +490,10 @@ void displayControls() {
     std::cout << "  SPACE/SHIFT - Move camera up/down" << std::endl;
     std::cout << "  Right Mouse - Look around (hold and drag)" << std::endl;
     std::cout << "  T/Y         - Time speed (fast/normal)" << std::endl;
-    std::cout << "\n========================================\n" << std::endl;
+    std::cout << "\n-------------------------------------\n" << std::endl;
 }
 
-// ============================================================================
 // CALLBACK FUNCTIONS
-// ============================================================================
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -567,14 +525,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     }
 }
 
-/**
- * Handle keyboard input
- * - ENTER: Switch between 2D and 3D modes
- * - Arrow keys: Move selected building in 2D mode
- * - WASD: Camera movement in 3D mode
- * - H: Toggle help
- * - ESC: Exit
- */
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
         // Mode switching
@@ -735,13 +686,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             if (key == GLFW_KEY_L) {
                 // Debug: List all building positions
                 const auto& buildings = cityGen.getBuildings();
-                std::cout << "\n========== BUILDING POSITIONS ==========" << std::endl;
+                std::cout << "\n BUILDING POSITIONS " << std::endl;
                 for (size_t i = 0; i < buildings.size(); ++i) {
                     const auto& b = buildings[i];
                     std::cout << "Building #" << i << ": X[" << b.position.x << "-" << (b.position.x + b.size.x) 
                               << "] Y[" << b.position.y << "-" << (b.position.y + b.size.y) << "]" << std::endl;
                 }
-                std::cout << "========================================\n" << std::endl;
+                std::cout << "-------------------------------------\n" << std::endl;
             }
         }
         
@@ -792,23 +743,21 @@ void processInput(GLFWwindow* window) {
     }
 }
 
-// ============================================================================
 // UTILITY FUNCTIONS
-// ============================================================================
 
-/**
- * Convert screen coordinates to world coordinates for 2D view
- */
+
+// Convert screen coordinates to world coordinates for 2D view
+ 
 glm::vec2 screenToWorld(const glm::vec2& screenPos, int screenWidth, int screenHeight) {
     float worldX = (screenPos.x / screenWidth) * userLayoutSize;
     float worldY = ((screenHeight - screenPos.y) / screenHeight) * userLayoutSize;
     return glm::vec2(worldX, worldY);
 }
 
-/**
- * Select the nearest building to the clicked position
- * Used for interactive building movement with arrow keys
- */
+
+//Select the nearest building to the clicked position
+//Used for interactive building movement with arrow keys
+
 void selectNearestBuilding(const glm::vec2& worldPos) {
     const auto& buildings = cityGen.getBuildings();
     selectedBuildingIndex = -1;
@@ -861,10 +810,10 @@ void selectNearestBuilding(const glm::vec2& worldPos) {
     }
 }
 
-/**
- * Move the currently selected building by dx, dy pixels
- * Demonstrates interactive object manipulation with collision detection
- */
+
+// Move the currently selected building by dx, dy pixels
+// Demonstrates interactive object manipulation with collision detection
+
 void moveSelectedBuilding(int dx, int dy) {
     if (selectedBuildingIndex < 0) return;
     
@@ -907,9 +856,9 @@ void moveSelectedBuilding(int dx, int dy) {
 
 // RUNTIME CITY MODIFICATION FUNCTIONS
 
-/**
- * Cycle through road patterns: Grid -> Radial -> Random -> Grid
- */
+
+// Cycle through road patterns: Grid -> Radial -> Random -> Grid
+
 void setRoadPattern(RoadType newType) {
     userRoadType = newType;
     
@@ -929,9 +878,9 @@ void setRoadPattern(RoadType newType) {
     std::cout << "[ROADS] Road network and street lights regenerated!" << std::endl;
 }
 
-/**
- * Add one building to the city at a random location with collision avoidance
- */
+
+//Add one building to the city at a random location with collision avoidance
+
 void addOneBuilding() {
     // Try multiple times to find a valid position
     const int maxAttempts = 20;
@@ -975,9 +924,9 @@ void addOneBuilding() {
     }
 }
 
-/**
- * Remove the most recently added building
- */
+
+//Remove the most recently added building
+
 void removeOneBuilding() {
     const auto& buildings = cityGen.getBuildings();
     
@@ -1002,9 +951,9 @@ void removeOneBuilding() {
     std::cout << "[BUILDINGS] Removed one building. Total: " << userNumBuildings << std::endl;
 }
 
-/**
- * Cycle through skyline types and regenerate building heights
- */
+
+//Cycle through skyline types and regenerate building heights
+
 void cycleSkylineType() {
     // Cycle to next skyline type
     if (userSkylineType == SkylineType::LOW_RISE) {
@@ -1033,9 +982,8 @@ void cycleSkylineType() {
     std::cout << "[SKYLINE] All building heights updated!" << std::endl;
 }
 
-/**
- * Cycle through texture themes for 3D buildings
- */
+
+// Cycle through texture themes for 3D buildings
 void cycleTextureTheme() {
     userTextureTheme = (userTextureTheme + 1) % 3;
     
