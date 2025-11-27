@@ -499,81 +499,10 @@ All changes apply instantly without restarting:
 
 ---
 
-## 🎓 Assignment Criteria Coverage
 
-### Technical Implementation (40%) ✅
 
-**Required Algorithms**:
-- ✅ **Basic OpenGL Lines**: Building outlines in 2D mode
-- ✅ **Bresenham's Line Algorithm**: All roads in 2D mode (grid/radial/random patterns)
-- ✅ **Midpoint Circle Algorithm**: Central park in 2D mode (user-configurable radius)
-- ✅ **3D Model with Texture Mapping**: All buildings in 3D mode (three texture themes)
 
-**Code Stability**:
-- ✅ No crashes during normal operation
-- ✅ Input validation for all user parameters
-- ✅ Boundary checking for building placement/movement
-- ✅ Smooth performance across modes
 
-**2D/3D Integration**:
-- ✅ Seamless mode switching with ENTER key
-- ✅ Synchronized data between 2D planning and 3D exploration
-- ✅ Changes in 2D immediately visible in 3D
-
-### Creativity & Design (30%) ✅
-
-**Novel Concept**:
-- ✅ Interactive parameter-driven city designer
-- ✅ Dual-view system (plan in 2D, explore in 3D)
-- ✅ Real-time building creation and modification
-- ✅ Runtime city-wide modifications (roads, skylines, textures)
-
-**Elegant Integration**:
-- ✅ All algorithms serve clear, practical purposes
-- ✅ Natural workflow from configuration → generation → exploration
-- ✅ User controls are intuitive and well-documented
-
-**Polished Experience**:
-- ✅ On-screen help overlay (H key)
-- ✅ Visual feedback (yellow selection, cyan preview)
-- ✅ Console logging of all actions
-- ✅ Smooth camera controls and animations
-
-### Presentation (20%) ✅
-
-**Clear Demonstration**:
-- ✅ Algorithms visibly working (roads, parks, textures)
-- ✅ Console messages explain features at startup
-- ✅ On-screen UI shows current mode and controls
-
-**Engaging**:
-- ✅ Interactive and explorable
-- ✅ Dynamic elements (day/night cycle, time control)
-- ✅ Multiple configurations possible
-
-**Professional**:
-- ✅ Comprehensive documentation (this README)
-- ✅ Clean user interface
-- ✅ Stable, polished experience
-
-### Code Quality (10%) ✅
-
-**Readable & Well-Commented**:
-- ✅ Clear function and variable names
-- ✅ Section headers in code
-- ✅ Inline comments explaining algorithms
-
-**Organized**:
-- ✅ Modular design (separate renderers)
-- ✅ Logical file structure
-- ✅ Clean separation of concerns
-
-**Appropriate Techniques**:
-- ✅ Modern OpenGL (VBO/VAO, shaders)
-- ✅ Efficient algorithms (Bresenham, Midpoint)
-- ✅ Proper resource management
-
-**Expected Grade: 100% (Full marks across all criteria)**
 
 ---
 
